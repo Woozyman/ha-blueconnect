@@ -1,0 +1,35 @@
+{
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "default": "mdi:thermometer"
+      },
+      "ph": {
+        "default": "mdi:flask-outline"
+      },
+      "orp": {
+        "default": "mdi:flash"
+      },
+      "salinity": {
+        "default": "mdi:waves"
+      },
+      "last_measurement": {
+        "default": "mdi:clock-outline"
+      },
+      "status": {
+        "default": "mdi:pool"
+      }
+    },
+    "binary_sensor": {
+      "ph_ok": {
+        "default": "mdi:flask-check-outline"
+      },
+      "orp_ok": {
+        "default": "mdi:flash-outline"
+      },
+      "temperature_ok": {
+        "default": "mdi:thermometer-check"
+      }
+    }
+  }
+}
