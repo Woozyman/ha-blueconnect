@@ -1,0 +1,66 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Blue Connect",
+        "description": "Enter your Blue Connect account details.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "blue_key": "Blue Key"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect Blue Connect",
+        "description": "Update your Blue Connect credentials.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "blue_key": "Blue Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Blue Connect.",
+      "invalid_auth": "Invalid Blue Connect credentials.",
+      "unknown": "Unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This Blue Connect device is already configured.",
+      "reauth_successful": "Blue Connect credentials updated successfully."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "name": "Temperature"
+      },
+      "ph": {
+        "name": "pH"
+      },
+      "orp": {
+        "name": "ORP"
+      },
+      "salinity": {
+        "name": "Salinity"
+      },
+      "last_measurement": {
+        "name": "Last measurement"
+      },
+      "status": {
+        "name": "Status"
+      }
+    },
+    "binary_sensor": {
+      "ph_ok": {
+        "name": "pH OK"
+      },
+      "orp_ok": {
+        "name": "ORP OK"
+      },
+      "temperature_ok": {
+        "name": "Temperature OK"
+      }
+    }
+  }
+}
