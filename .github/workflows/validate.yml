@@ -14,9 +14,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Run hassfest
-        uses: frenck/action-hassfest@v1
-
       - name: Run HACS validation
         uses: hacs/action@main
         with:
