@@ -9,7 +9,12 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
-from .api import BlueConnectApi, BlueConnectApiError, BlueConnectAuthError
+from .api import (
+    BlueConnectApi,
+    BlueConnectApiError,
+    BlueConnectAuthError,
+    BlueConnectRateLimitError,
+)
 from .const import CONF_BLUE_KEY, CONF_PASSWORD, CONF_USERNAME, DEFAULT_NAME, DOMAIN
 
 
@@ -45,6 +50,10 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, str]) -> dict[str
         await api.async_get_measurement()
     except BlueConnectAuthError as err:
         raise InvalidAuth from err
+    except BlueConnectRateLimitError:
+        # The API is on cooldown; let the caller accept the credentials and
+        # verify them later instead of blocking setup.
+        raise
     except BlueConnectApiError as err:
         raise CannotConnect from err
 
@@ -71,6 +80,13 @@ class BlueConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
+            except BlueConnectRateLimitError:
+                # Cannot validate right now because of the API cooldown; accept
+                # the credentials and let the coordinator verify them later.
+                return self.async_create_entry(
+                    title=f"{DEFAULT_NAME} {user_input[CONF_BLUE_KEY]}",
+                    data=user_input,
+                )
             except Exception:  # pragma: no cover - defensive fallback
                 errors["base"] = "unknown"
             else:
@@ -105,11 +121,17 @@ class BlueConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
+            except BlueConnectRateLimitError:
+                # Cannot validate right now because of the API cooldown; store
+                # the credentials and let the coordinator verify them later.
+                pass
             except Exception:  # pragma: no cover - defensive fallback
                 errors["base"] = "unknown"
-            else:
-                await self.async_set_unique_id(data[CONF_BLUE_KEY])
-                self.hass.config_entries.async_update_entry(entry, data=data, title=f"{DEFAULT_NAME} {data[CONF_BLUE_KEY]}")
+
+            if not errors:
+                self.hass.config_entries.async_update_entry(
+                    entry, data=data, title=f"{DEFAULT_NAME} {data[CONF_BLUE_KEY]}"
+                )
                 await self.hass.config_entries.async_reload(entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
 

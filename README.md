@@ -19,10 +19,11 @@ Home Assistant custom integration for Blue Connect pool monitors.
 1. Add this repository as a custom repository in HACS:
    - `https://github.com/Woozyman/ha-blueconnect`
    - Category: `Integration`
-2. Install the integration and restart Home Assistant.
-3. Go to **Settings → Devices & Services → Add Integration**.
-4. Search for **Blue Connect**.
-5. Enter your:
+2. Install the integration by searching the list in HACS again for "blueconnect"
+3. After installation restart Home Assistant. **Settings → Devices & Services → Add Integration**
+3. Go to **Settings → System → Click to restart in top right corner.**.
+5. Search for **Blue Connect**.
+6. Enter your:
    - Blue Connect email
    - Blue Connect password
    - Blue Connect Blue Key
