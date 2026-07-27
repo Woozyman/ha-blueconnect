@@ -74,10 +74,11 @@ class BlueConnectDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except BlueConnectAuthError as err:
             raise ConfigEntryAuthFailed from err
         except BlueConnectRateLimitError as err:
-            self._suspend(timedelta(seconds=max(err.retry_after, 0)) + RATE_LIMIT_BUFFER, extend_interval=True)
-            minutes = max(1, err.retry_after // 60)
+            delay = timedelta(seconds=max(err.retry_after, 0)) + RATE_LIMIT_BUFFER
+            self._schedule_next(delay)
+            minutes = max(1, int(delay.total_seconds() // 60))
             _LOGGER.warning(
-                "Blue Connect API rate limit reached; retrying in about %s minutes",
+                "Blue Connect API rate limit reached; next attempt in about %s minutes",
                 minutes,
             )
             # Keep the last known values (or empty data before the first
@@ -86,16 +87,14 @@ class BlueConnectDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except BlueConnectApiError as err:
             raise UpdateFailed(str(err) or "Unable to fetch Blue Connect data") from err
 
-        # A successful call still counts against the API's minimum spacing, so
-        # start a fresh cooldown while restoring the normal polling cadence.
-        self._suspend(MIN_CALL_SPACING, extend_interval=False)
-        self.update_interval = timedelta(seconds=SCAN_INTERVAL)
+        # A successful call also counts against the API's minimum spacing, so
+        # schedule the next poll for as soon as another call is permitted. This
+        # keeps the countdown and the actual refresh aligned.
+        self._schedule_next(MIN_CALL_SPACING + RATE_LIMIT_BUFFER)
         return data
 
-    def _suspend(self, delay: timedelta, *, extend_interval: bool) -> None:
-        """Record a cooldown window and optionally defer the next auto refresh."""
+    def _schedule_next(self, delay: timedelta) -> None:
+        """Start a cooldown and align the next automatic poll with its end."""
 
         self._suspended_until = dt_util.utcnow() + delay
-        if extend_interval:
-            # Never auto-poll sooner than both the cooldown and the base cadence.
-            self.update_interval = max(delay, timedelta(seconds=SCAN_INTERVAL))
+        self.update_interval = delay
