@@ -5,8 +5,8 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 
 from .api import BlueConnectApi, BlueConnectApiError, BlueConnectAuthError
@@ -56,7 +56,7 @@ class BlueConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input: dict[str, str] | None = None) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, str] | None = None) -> ConfigFlowResult:
         """Handle the initial step."""
 
         errors: dict[str, str] = {}
@@ -78,14 +78,14 @@ class BlueConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(step_id="user", data_schema=_schema(user_input), errors=errors)
 
-    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
+    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> ConfigFlowResult:
         """Handle reauthentication."""
 
         return await self.async_step_reauth_confirm(dict(entry_data))
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, str] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the reauthentication confirmation step."""
 
         entry = self._get_reauth_entry()
