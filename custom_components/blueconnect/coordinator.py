@@ -37,37 +37,36 @@ class BlueConnectDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=SCAN_INTERVAL),
         )
         self.api = api
-        self._suspended_until: datetime | None = None
+        self._allowed_after: datetime | None = None
+        self._next_poll: datetime | None = None
 
     @property
     def next_update(self) -> datetime | None:
-        """Return the earliest time a new API call is allowed, if known."""
+        """Return when the next automatic API poll is scheduled, if known."""
 
-        return self._suspended_until
+        return self._next_poll
 
     @property
     def call_allowed(self) -> bool:
         """Return whether the API may be called right now."""
 
-        return self._suspended_until is None or dt_util.utcnow() >= self._suspended_until
+        return self._allowed_after is None or dt_util.utcnow() >= self._allowed_after
 
     async def _async_update_data(self) -> dict[str, Any]:
-        """Fetch data from the Blue Connect API, honouring any active cooldown."""
+        """Fetch data from the Blue Connect API, honouring the API's limits."""
 
         now = dt_util.utcnow()
 
-        # If we are still within a cooldown window, do not call the API again.
-        # This protects the fragile endpoint from being hammered by manual
-        # refreshes, reloads or restarts.
-        if self._suspended_until is not None and now < self._suspended_until:
-            if self.data is not None:
-                remaining = int((self._suspended_until - now).total_seconds())
-                _LOGGER.debug(
-                    "Skipping Blue Connect update; cooldown active for %s more seconds",
-                    remaining,
-                )
-                return self.data
-            return {}
+        # Never call the API before the minimum spacing has elapsed. This
+        # protects the fragile endpoint from manual refreshes, reloads or
+        # restarts hammering it.
+        if self._allowed_after is not None and now < self._allowed_after:
+            remaining = int((self._allowed_after - now).total_seconds())
+            _LOGGER.debug(
+                "Skipping Blue Connect update; %s seconds until next allowed call",
+                remaining,
+            )
+            return self.data if self.data is not None else {}
 
         try:
             data = await self.api.async_get_measurement()
@@ -75,7 +74,7 @@ class BlueConnectDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise ConfigEntryAuthFailed from err
         except BlueConnectRateLimitError as err:
             delay = timedelta(seconds=max(err.retry_after, 0)) + RATE_LIMIT_BUFFER
-            self._schedule_next(delay)
+            self._reschedule(gate=delay, cadence=delay)
             minutes = max(1, int(delay.total_seconds() // 60))
             _LOGGER.warning(
                 "Blue Connect API rate limit reached; next attempt in about %s minutes",
@@ -87,14 +86,15 @@ class BlueConnectDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except BlueConnectApiError as err:
             raise UpdateFailed(str(err) or "Unable to fetch Blue Connect data") from err
 
-        # A successful call also counts against the API's minimum spacing, so
-        # schedule the next poll for as soon as another call is permitted. This
-        # keeps the countdown and the actual refresh aligned.
-        self._schedule_next(MIN_CALL_SPACING + RATE_LIMIT_BUFFER)
+        # Success: poll again on the normal ~hourly cadence, while still
+        # honouring the API's ~45 minute minimum spacing for manual refreshes.
+        self._reschedule(gate=MIN_CALL_SPACING + RATE_LIMIT_BUFFER, cadence=timedelta(seconds=SCAN_INTERVAL))
         return data
 
-    def _schedule_next(self, delay: timedelta) -> None:
-        """Start a cooldown and align the next automatic poll with its end."""
+    def _reschedule(self, *, gate: timedelta, cadence: timedelta) -> None:
+        """Record the next allowed call time and the next automatic poll."""
 
-        self._suspended_until = dt_util.utcnow() + delay
-        self.update_interval = delay
+        now = dt_util.utcnow()
+        self._allowed_after = now + gate
+        self.update_interval = cadence
+        self._next_poll = now + cadence
