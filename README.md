@@ -82,3 +82,6 @@ To be discoverable in HACS search without adding a custom repository:
 2. Keep `hacs.json` in the repository root.
 3. Add repository topics such as `home-assistant`, `home-assistant-integration`, `hacs`, `blueconnect`, and `pool-monitor`.
 4. Submit the repository to the HACS default list after it is ready.
+
+## This plugins reference is to RiiotLabs own API docs, find repo here:
+Uses `https://github.com/RiiotLabs/Blue-backend-automation`
