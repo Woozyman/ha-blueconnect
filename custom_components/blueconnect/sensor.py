@@ -9,7 +9,7 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, Sen
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfElectricPotential, UnitOfTemperature
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
@@ -79,7 +79,10 @@ async def async_setup_entry(
             BlueConnectSensor(coordinator, runtime_data.api.blue_key, description)
             for description in SENSOR_DESCRIPTIONS
         ]
-        + [BlueConnectStatusSensor(coordinator, runtime_data.api.blue_key)]
+        + [
+            BlueConnectStatusSensor(coordinator, runtime_data.api.blue_key),
+            BlueConnectNextUpdateSensor(coordinator, runtime_data.api.blue_key),
+        ]
     )
 
 
@@ -154,6 +157,24 @@ class BlueConnectStatusSensor(BlueConnectEntity, SensorEntity):
         if not isinstance(statuses, list):
             statuses = []
         return {"status": [str(status) for status in statuses]}
+
+
+class BlueConnectNextUpdateSensor(BlueConnectEntity, SensorEntity):
+    """Sensor reporting when the next Blue Connect API call is allowed."""
+
+    _attr_translation_key = "next_update"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: BlueConnectDataUpdateCoordinator, blue_key: str) -> None:
+        super().__init__(coordinator, blue_key)
+        self._attr_unique_id = f"{blue_key}_next_update"
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the timestamp of the next possible update."""
+
+        return self.coordinator.next_update
 
 
 def _parse_timestamp(value: Any) -> datetime | None:

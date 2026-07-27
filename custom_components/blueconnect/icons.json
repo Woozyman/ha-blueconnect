@@ -18,6 +18,9 @@
       },
       "status": {
         "default": "mdi:pool"
+      },
+      "next_update": {
+        "default": "mdi:timer-sand"
       }
     },
     "binary_sensor": {
@@ -29,6 +32,11 @@
       },
       "temperature_ok": {
         "default": "mdi:thermometer-check"
+      }
+    },
+    "button": {
+      "refresh": {
+        "default": "mdi:refresh"
       }
     }
   }

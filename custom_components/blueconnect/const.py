@@ -9,5 +9,5 @@ CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
 CONF_BLUE_KEY = "blue_key"
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 SCAN_INTERVAL = 3600

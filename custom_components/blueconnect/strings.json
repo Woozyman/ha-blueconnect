@@ -49,6 +49,9 @@
       },
       "status": {
         "name": "Status"
+      },
+      "next_update": {
+        "name": "Next possible update"
       }
     },
     "binary_sensor": {
@@ -60,6 +63,11 @@
       },
       "temperature_ok": {
         "name": "Temperature OK"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
       }
     }
   }
